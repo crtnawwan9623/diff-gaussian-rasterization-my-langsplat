@@ -38,6 +38,7 @@ namespace CudaRasterizer
 			const float* means3D,
 			const float* shs,
 			const float* colors_precomp,
+			const float* language_feature_precomp,
 			const float* opacities,
 			const float* scales,
 			const float scale_modifier,
@@ -49,10 +50,12 @@ namespace CudaRasterizer
 			const float tan_fovx, float tan_fovy,
 			const bool prefiltered,
 			float* out_color,
+			float* out_language_feature,
 			float* depth,
 			bool antialiasing,
 			int* radii = nullptr,
-			bool debug = false);
+			bool debug = false,
+			bool include_feature = false);
 
 		static void backward(
 			const int P, int D, int M, int R,
@@ -61,6 +64,7 @@ namespace CudaRasterizer
 			const float* means3D,
 			const float* shs,
 			const float* colors_precomp,
+			const float* language_feature_precomp,
 			const float* opacities,
 			const float* scales,
 			const float scale_modifier,
@@ -75,11 +79,13 @@ namespace CudaRasterizer
 			char* binning_buffer,
 			char* image_buffer,
 			const float* dL_dpix,
+			const float* dL_dpix_F,
 			const float* dL_invdepths,
 			float* dL_dmean2D,
 			float* dL_dconic,
 			float* dL_dopacity,
 			float* dL_dcolor,
+			float* dL_dlanguage_feature,
 			float* dL_dinvdepth,
 			float* dL_dmean3D,
 			float* dL_dcov3D,
@@ -87,7 +93,8 @@ namespace CudaRasterizer
 			float* dL_dscale,
 			float* dL_drot,
 			bool antialiasing,
-			bool debug);
+			bool debug,
+			bool include_feature);
 	};
 };
 

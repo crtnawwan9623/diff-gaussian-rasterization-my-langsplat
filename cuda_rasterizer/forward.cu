@@ -271,7 +271,7 @@ __global__ void preprocessCUDA(int P, int D, int M,
 // Main rasterization method. Collaboratively works on one tile per
 // block, each thread treats one pixel. Alternates between fetching 
 // and rasterizing data.
-template <uint32_t CHANNELS>
+template <uint32_t CHANNELS, uint32_t CHANNELS_language_feature>
 __global__ void __launch_bounds__(BLOCK_X * BLOCK_Y)
 renderCUDA(
 	const uint2* __restrict__ ranges,
@@ -279,11 +279,14 @@ renderCUDA(
 	int W, int H,
 	const float2* __restrict__ points_xy_image,
 	const float* __restrict__ features,
+	const float* __restrict__ language_feature,
 	const float4* __restrict__ conic_opacity,
 	float* __restrict__ final_T,
 	uint32_t* __restrict__ n_contrib,
 	const float* __restrict__ bg_color,
 	float* __restrict__ out_color,
+	float* __restrict__ out_language_feature,
+	bool include_feature,
 	const float* __restrict__ depths,
 	float* __restrict__ invdepth)
 {
@@ -316,7 +319,7 @@ renderCUDA(
 	uint32_t contributor = 0;
 	uint32_t last_contributor = 0;
 	float C[CHANNELS] = { 0 };
-
+	float F[CHANNELS_language_feature] = { 0 };
 	float expected_invdepth = 0.0f;
 
 	// Iterate over batches until all done or range is complete
@@ -371,6 +374,12 @@ renderCUDA(
 			for (int ch = 0; ch < CHANNELS; ch++)
 				C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
 
+			if (include_feature)
+			{
+				for (int ch = 0; ch < CHANNELS_language_feature; ch++)
+					F[ch] += language_feature[collected_id[j] * CHANNELS_language_feature + ch] * alpha * T;
+			}
+			
 			if(invdepth)
 			expected_invdepth += (1 / depths[collected_id[j]]) * alpha * T;
 
@@ -391,6 +400,12 @@ renderCUDA(
 		for (int ch = 0; ch < CHANNELS; ch++)
 			out_color[ch * H * W + pix_id] = C[ch] + T * bg_color[ch];
 
+		if (include_feature) 
+		{
+			for (int ch = 0; ch < CHANNELS_language_feature; ch++)
+				out_language_feature[ch * H * W + pix_id] = F[ch]; //bg_color ???
+		}
+		
 		if (invdepth)
 		invdepth[pix_id] = expected_invdepth;// 1. / (expected_depth + T * 1e3);
 	}
@@ -403,25 +418,31 @@ void FORWARD::render(
 	int W, int H,
 	const float2* means2D,
 	const float* colors,
+	const float* language_feature,
 	const float4* conic_opacity,
 	float* final_T,
 	uint32_t* n_contrib,
 	const float* bg_color,
 	float* out_color,
+	float* out_language_feature,
+	bool include_feature,
 	float* depths,
 	float* depth)
 {
-	renderCUDA<NUM_CHANNELS> << <grid, block >> > (
+	renderCUDA<NUM_CHANNELS, NUM_CHANNELS_language_feature> << <grid, block >> > (
 		ranges,
 		point_list,
 		W, H,
 		means2D,
 		colors,
+		language_feature,
 		conic_opacity,
 		final_T,
 		n_contrib,
 		bg_color,
 		out_color,
+		out_language_feature,
+		include_feature,
 		depths, 
 		depth);
 }
