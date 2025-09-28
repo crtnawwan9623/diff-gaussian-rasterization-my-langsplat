@@ -162,7 +162,7 @@ class GaussianRasterizationSettings(NamedTuple):
     campos : torch.Tensor
     prefiltered : bool
     debug : bool
-	include_feature: bool
+    include_feature: bool
     antialiasing : bool
 
 class GaussianRasterizer(nn.Module):

@@ -41,7 +41,7 @@ namespace BACKWARD
 		float* dL_dopacity,
 		float* dL_dcolors,
 		float* dL_dlanguage_feature,
-		bool include_feature
+		bool include_feature,
 		float* dL_dinvdepths);
 
 	void preprocess(
