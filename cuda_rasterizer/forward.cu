@@ -287,6 +287,8 @@ renderCUDA(
 	float* __restrict__ out_color,
 	float* __restrict__ out_language_feature,
 	bool include_feature,
+	int* __restrict__ out_max_contrib,
+	bool include_max_contrib,
 	const float* __restrict__ depths,
 	float* __restrict__ invdepth)
 {
@@ -321,6 +323,8 @@ renderCUDA(
 	float C[CHANNELS] = { 0 };
 	float F[CHANNELS_language_feature] = { 0 };
 	float expected_invdepth = 0.0f;
+	int max_contributor = 0;
+	float max_contrib_T = 0.0f;
 
 	// Iterate over batches until all done or range is complete
 	for (int i = 0; i < rounds; i++, toDo -= BLOCK_SIZE)
@@ -383,6 +387,15 @@ renderCUDA(
 			if(invdepth)
 			expected_invdepth += (1 / depths[collected_id[j]]) * alpha * T;
 
+			if (include_max_contrib)
+			{
+				if (alpha * T > max_contrib_T)
+				{
+					max_contrib_T = alpha * T;
+					max_contributor = collected_id[j];
+				}
+			}
+
 			T = test_T;
 
 			// Keep track of last range entry to update this
@@ -405,6 +418,8 @@ renderCUDA(
 			for (int ch = 0; ch < CHANNELS_language_feature; ch++)
 				out_language_feature[ch * H * W + pix_id] = F[ch]; //bg_color ???
 		}
+		if (include_max_contrib)
+			out_max_contrib[pix_id] = max_contributor;
 		
 		if (invdepth)
 		invdepth[pix_id] = expected_invdepth;// 1. / (expected_depth + T * 1e3);
@@ -426,6 +441,8 @@ void FORWARD::render(
 	float* out_color,
 	float* out_language_feature,
 	bool include_feature,
+	int* out_max_contrib,
+	bool include_max_contrib,
 	float* depths,
 	float* depth)
 {
@@ -443,6 +460,8 @@ void FORWARD::render(
 		out_color,
 		out_language_feature,
 		include_feature,
+		out_max_contrib,
+		include_max_contrib,
 		depths, 
 		depth);
 }

@@ -218,11 +218,13 @@ int CudaRasterizer::Rasterizer::forward(
 	const bool prefiltered,
 	float* out_color,
 	float* out_language_feature,
+	int* out_max_contrib,
 	float* depth,
 	bool antialiasing,
 	int* radii,
 	bool debug,
-	bool include_feature)
+	bool include_feature,
+	bool include_max_contrib)
 {
 	const float focal_y = height / (2.0f * tan_fovy);
 	const float focal_x = width / (2.0f * tan_fovx);
@@ -348,6 +350,8 @@ int CudaRasterizer::Rasterizer::forward(
 		out_color,
 		out_language_feature,
 		include_feature,
+		out_max_contrib,
+		include_max_contrib,
 		geomState.depths,
 		depth), debug)
 

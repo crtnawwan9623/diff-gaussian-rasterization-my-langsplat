@@ -82,20 +82,21 @@ class _RasterizeGaussians(torch.autograd.Function):
             raster_settings.prefiltered,
             raster_settings.antialiasing,
             raster_settings.debug,
-			raster_settings.include_feature
+			raster_settings.include_feature,
+            raster_settings.include_max_contrib
         )
 
         # Invoke C++/CUDA rasterizer
-        num_rendered, color, language_feature, radii, geomBuffer, binningBuffer, imgBuffer, invdepths = _C.rasterize_gaussians(*args)
+        num_rendered, color, language_feature, max_contrib, radii, geomBuffer, binningBuffer, imgBuffer, invdepths = _C.rasterize_gaussians(*args)
 
         # Keep relevant tensors for backward
         ctx.raster_settings = raster_settings
         ctx.num_rendered = num_rendered
         ctx.save_for_backward(colors_precomp, language_feature_precomp, means3D, scales, rotations, cov3Ds_precomp, radii, sh, opacities, geomBuffer, binningBuffer, imgBuffer)
-        return color, language_feature, radii, invdepths
+        return color, language_feature, max_contrib, radii, invdepths
 
     @staticmethod
-    def backward(ctx, grad_out_color, grad_out_language_feature, _, grad_out_depth):
+    def backward(ctx, grad_out_color, grad_out_language_feature, _, _, grad_out_depth):
 
         # Restore necessary values from context
         num_rendered = ctx.num_rendered
@@ -163,6 +164,7 @@ class GaussianRasterizationSettings(NamedTuple):
     prefiltered : bool
     debug : bool
     include_feature: bool
+    include_max_contrib: bool
     antialiasing : bool
 
 class GaussianRasterizer(nn.Module):

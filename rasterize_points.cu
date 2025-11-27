@@ -55,7 +55,8 @@ RasterizeGaussiansCUDA(
 	const bool prefiltered,
 	const bool antialiasing,
 	const bool debug,
-	const bool include_feature)
+	const bool include_feature,
+	const bool include_max_contrib)
 {
   if (means3D.ndimension() != 2 || means3D.size(1) != 3) {
     AT_ERROR("means3D must have dimensions (num_points, 3)");
@@ -75,6 +76,13 @@ RasterizeGaussiansCUDA(
   }
   else {
 	out_language_feature = torch::full({1}, 0.0, float_opts);
+  }
+  torch::Tensor out_max_contrib;
+  if (include_max_contrib) {
+	out_max_contrib = torch::full({H, W}, 0.0, int_opts);
+  }
+  else {
+	out_max_contrib = torch::full({1}, 0, int_opts);
   }
   torch::Tensor out_invdepth = torch::full({0, H, W}, 0.0, float_opts);
   float* out_invdepthptr = nullptr;
@@ -126,13 +134,15 @@ RasterizeGaussiansCUDA(
 		prefiltered,
 		out_color.contiguous().data<float>(),
 		out_language_feature.contiguous().data<float>(),
+		out_max_contrib.contiguous().data<int>(),
 		out_invdepthptr,
 		antialiasing,
 		radii.contiguous().data<int>(),
 		debug,
-		include_feature);
+		include_feature,
+		include_max_contrib);
   }
-  return std::make_tuple(rendered, out_color, out_language_feature, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
+  return std::make_tuple(rendered, out_color, out_language_feature, out_max_contrib, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
