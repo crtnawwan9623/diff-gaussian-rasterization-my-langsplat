@@ -51,11 +51,13 @@ namespace CudaRasterizer
 			const bool prefiltered,
 			float* out_color,
 			float* out_language_feature,
+			int* out_max_contrib,
 			float* depth,
 			bool antialiasing,
 			int* radii = nullptr,
 			bool debug = false,
-			bool include_feature = false);
+			bool include_feature = false,
+			bool include_max_contrib = false);
 
 		static void backward(
 			const int P, int D, int M, int R,

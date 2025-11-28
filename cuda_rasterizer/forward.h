@@ -64,6 +64,8 @@ namespace FORWARD
 		float* out_color,
 		float* out_language_feature,
 		bool include_feature,
+		int* out_max_contrib,
+		bool include_max_contrib,
 		float* depths,
 		float* depth);
 }
