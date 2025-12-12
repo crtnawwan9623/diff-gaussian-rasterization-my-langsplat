@@ -14,6 +14,7 @@
 
 #define NUM_CHANNELS 3 // Default 3, RGB
 #define NUM_CHANNELS_language_feature 16 //3 CLIP_feature
+#define NUM_MAX_CONTRIBUTORS 3 // Number of max contributors per pixel used for dynamic prior regularization
 #define BLOCK_X 16
 #define BLOCK_Y 16
 

@@ -323,8 +323,18 @@ renderCUDA(
 	float C[CHANNELS] = { 0 };
 	float F[CHANNELS_language_feature] = { 0 };
 	float expected_invdepth = 0.0f;
-	int max_contributor = 0;
-	float max_contrib_T = 0.0f;
+	// int max_contributor = 0;
+	// float max_contrib_T = 0.0f;
+	// --- track top-K contributors (unsorted) ---
+	int   top_ids[NUM_MAX_CONTRIBUTORS];
+	float top_vals[NUM_MAX_CONTRIBUTORS];
+	#pragma unroll
+	for (int k = 0; k < NUM_MAX_CONTRIBUTORS; ++k) {
+		top_ids[k]  = -1;      // sentinel
+		top_vals[k] = 0.0f;
+	}
+	int min_idx = 0;  // index of current minimum in top_vals
+	// --- end top-K init ---
 
 	// Iterate over batches until all done or range is complete
 	for (int i = 0; i < rounds; i++, toDo -= BLOCK_SIZE)
@@ -389,11 +399,32 @@ renderCUDA(
 
 			if (include_max_contrib)
 			{
-				if (alpha * T > max_contrib_T)
-				{
-					max_contrib_T = alpha * T;
-					max_contributor = collected_id[j];
-				}
+				// if (alpha * T > max_contrib_T)
+				// {
+				// 	max_contrib_T = alpha * T;
+				// 	max_contributor = collected_id[j];
+				// }
+				float contrib = alpha * T;
+                // if contrib is better than current min, replace that slot
+                if (contrib > top_vals[min_idx])
+                {
+                    top_vals[min_idx] = contrib;
+                    top_ids[min_idx]  = collected_id[j];
+
+                    // recompute min_idx (unsorted array)
+                    int new_min_idx = 0;
+                    float new_min_val = top_vals[0];
+                    #pragma unroll
+                    for (int k = 1; k < NUM_MAX_CONTRIBUTORS; ++k)
+                    {
+                        if (top_vals[k] < new_min_val)
+                        {
+                            new_min_val = top_vals[k];
+                            new_min_idx = k;
+                        }
+                    }
+                    min_idx = new_min_idx;
+                }
 			}
 
 			T = test_T;
@@ -419,7 +450,13 @@ renderCUDA(
 				out_language_feature[ch * H * W + pix_id] = F[ch]; //bg_color ???
 		}
 		if (include_max_contrib)
-			out_max_contrib[pix_id] = max_contributor;
+			//out_max_contrib[pix_id] = max_contributor;
+            #pragma unroll
+            for (int k = 0; k < NUM_MAX_CONTRIBUTORS; ++k)
+            {
+                // layout: [NUM_MAX_CONTRIBUTORS, H, W]
+                out_max_contrib[k * H * W + pix_id] = top_ids[k];
+            }
 		
 		if (invdepth)
 		invdepth[pix_id] = expected_invdepth;// 1. / (expected_depth + T * 1e3);

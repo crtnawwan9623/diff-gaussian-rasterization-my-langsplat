@@ -79,7 +79,7 @@ RasterizeGaussiansCUDA(
   }
   torch::Tensor out_max_contrib;
   if (include_max_contrib) {
-	out_max_contrib = torch::full({H, W}, 0.0, int_opts);
+	out_max_contrib = torch::full({NUM_MAX_CONTRIBUTORS, H, W}, 0.0, int_opts);
   }
   else {
 	out_max_contrib = torch::full({1}, 0, int_opts);
